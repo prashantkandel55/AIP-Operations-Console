@@ -30,6 +30,17 @@ function App() {
   const [selectedObjectType, setSelectedObjectType] = useState('SupplyChainIncident');
 
   const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+  const FOUNDRY_HOST = import.meta.env.VITE_FOUNDRY_HOST;
+  const FOUNDRY_TOKEN = import.meta.env.VITE_FOUNDRY_TOKEN;
+  const FOUNDRY_ONTOLOGY_RID = import.meta.env.VITE_FOUNDRY_ONTOLOGY_RID;
+
+  // Debug: Log environment variables (remove in production)
+  console.log('Environment variables:', {
+    GROQ_API_KEY: GROQ_API_KEY ? 'SET' : 'MISSING',
+    FOUNDRY_HOST: FOUNDRY_HOST || 'MISSING',
+    FOUNDRY_TOKEN: FOUNDRY_TOKEN ? 'SET' : 'MISSING',
+    FOUNDRY_ONTOLOGY_RID: FOUNDRY_ONTOLOGY_RID || 'MISSING'
+  });
 
   const handleAnalyze = async () => {
     if (!input.trim() || isAnalyzing) return;
