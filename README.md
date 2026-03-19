@@ -100,4 +100,4 @@ The UI is built on **Palantir's Design Principles**:
 - **Controlled Hierarchy**: Blue accents for "Signal", Amber for "Divergence", and Red for "Critical Risk".
 
 ---
-*Built for the Palantir Internship application. Designed to be world-class.*
+*Designed to be world-class.*
