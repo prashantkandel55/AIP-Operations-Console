@@ -39,8 +39,26 @@ function App() {
     GROQ_API_KEY: GROQ_API_KEY ? 'SET' : 'MISSING',
     FOUNDRY_HOST: FOUNDRY_HOST || 'MISSING',
     FOUNDRY_TOKEN: FOUNDRY_TOKEN ? 'SET' : 'MISSING',
-    FOUNDRY_ONTOLOGY_RID: FOUNDRY_ONTOLOGY_RID || 'MISSING'
+    FOUNDRY_ONTOLOGY_RID: FOUNDRY_ONTOLOGY_RID || 'MISSING',
+    ALL_ENV_VARS: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
   });
+
+  // Test Groq API connection
+  const testGroqConnection = async () => {
+    if (!GROQ_API_KEY) return false;
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Groq connection test failed:', error);
+      return false;
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!input.trim() || isAnalyzing) return;
@@ -50,6 +68,45 @@ function App() {
     setCurrentAnalysis(null);
     setParseError(null);
     setChatMessages([]);
+
+    // If no API key, show mock analysis
+    if (!GROQ_API_KEY) {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      const mockAnalysis = {
+        summary: "Mock analysis: No Groq API key configured. This is a demo response showing the expected output format.",
+        severity: "medium",
+        category: "Other",
+        confidence_score: 85,
+        structured_events: [
+          {
+            id: "EVT-001",
+            title: "Configuration Issue Detected",
+            detail: "Environment variables not properly configured in deployment",
+            severity: "high",
+            timestamp: new Date().toISOString(),
+            entities: ["Netlify", "Environment Variables"],
+            confidence: 95
+          }
+        ],
+        connections: [],
+        recommended_actions: [
+          { priority: 1, action: "Configure Netlify environment variables", rationale: "Required for AI analysis functionality" }
+        ],
+        risk_score: 45,
+        intelligence_gaps: ["Actual operational data to analyze"]
+      };
+      
+      setCurrentAnalysis(mockAnalysis);
+      setRiskHistory(prev => [...prev, { score: mockAnalysis.risk_score, time: Date.now() }]);
+      setSessionHistory(prev => [{
+        input: input.slice(0, 100) + (input.length > 100 ? '...' : ''),
+        analysis: mockAnalysis,
+        timestamp: new Date()
+      }, ...prev].slice(0, 20));
+      
+      setIsAnalyzing(false);
+      return;
+    }
 
     let fullText = '';
     try {
@@ -158,13 +215,25 @@ function App() {
 
         {/* Center: Structured Analysis Area (flex-1) */}
         <div className="flex-1 flex flex-col bg-[var(--bg)] relative overflow-hidden">
+          {/* Debug Panel - Remove in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="absolute top-4 right-4 z-[60] p-3 bg-black/80 border border-yellow-500 rounded text-xs text-yellow-300 font-mono max-w-xs">
+              <div>🔍 DEBUG INFO:</div>
+              <div>GROQ: {GROQ_API_KEY ? '✅ SET' : '❌ MISSING'}</div>
+              <div>FOUNDRY: {FOUNDRY_HOST ? '✅ SET' : '❌ MISSING'}</div>
+              <div>TOKEN: {FOUNDRY_TOKEN ? '✅ SET' : '❌ MISSING'}</div>
+              <div>ONTOLOGY: {FOUNDRY_ONTOLOGY_RID ? '✅ SET' : '❌ MISSING'}</div>
+              <div className="mt-2 text-xs">Check browser console for details</div>
+            </div>
+          )}
+
           {!GROQ_API_KEY && (
             <div className="absolute top-4 left-4 right-4 z-[60] p-4 bg-[var(--warn-bg)] border border-[var(--warn)] rounded-[var(--radius2)] flex items-center justify-between text-[13px] shadow-lg shadow-black/50">
               <div className="flex items-center gap-3">
                 <AlertTriangle size={18} className="text-[var(--warn)]" />
                 <div className="flex flex-col">
                   <span className="font-medium text-[var(--warn)]">Groq API Key Missing</span>
-                  <span className="text-[var(--text2)] text-xs">Analysis features will not work until a valid key is provided in .env.local.</span>
+                  <span className="text-[var(--text2)] text-xs">Analysis features will not work until a valid key is provided in Netlify environment variables.</span>
                 </div>
               </div>
               <a
